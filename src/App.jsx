@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash } from 'lucide-react';
-import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, ScatterChart, Scatter } from 'recharts';
 import { supabase } from './supabase'; 
 
 export default function App() {
@@ -8,8 +8,9 @@ export default function App() {
   const [userData, setUserData] = useState({ nombre: '', cargo: '', edad: '' });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [dbRecords, setDbRecords] = useState([]); 
-  
   const [categoryScores, setCategoryScores] = useState({ Finanzas: 0, Hogar: 0, Salud: 0, Logística: 0 });
+
+  const GLOBAL_DB_AVERAGE = { Finanzas: 55, Hogar: 42, Salud: 68, Logística: 35 };
 
   const questions = [
     { category: "Finanzas", q: "¿Sigues viviendo al día, esperando que no ocurra un imprevisto financiero que te arruine el mes?", options: ["[A] Tengo ahorros, mis cuentas están bajo control.", "[B] Vivo al límite, a veces pido prestado.", "[C] Vivo de milagro, las tarjetas de crédito son mi salvación."], weights: [0, 50, 100] },
@@ -44,6 +45,7 @@ export default function App() {
     }
   };
 
+  const liveChartData = Object.keys(categoryScores).map(key => ({ categoria: key, "Nivel de Fraude": categoryScores[key], "Promedio Global": GLOBAL_DB_AVERAGE[key] }));
   const finalPercentage = Math.min(Math.round((Object.values(categoryScores).reduce((a, b) => a + b, 0) / 500) * 100), 100);
   const getRec = () => finalPercentage <= 30 ? { title: 'OPERATIVO', color: 'text-[#00FF41]', border: 'border-[#00FF41]' } : finalPercentage <= 60 ? { title: 'RIESGO MODERADO', color: 'text-yellow-500', border: 'border-yellow-500' } : { title: 'COLAPSO ESTRUCTURAL', color: 'text-red-500', border: 'border-red-500' };
 
@@ -52,13 +54,12 @@ export default function App() {
       <div className="max-w-5xl mx-auto">
         <header className="border-b border-zinc-800 pb-4 mb-8 flex justify-between items-end">
           <h1 className="text-3xl font-black text-zinc-100">Adult<span className="text-[#00FF41]">.Log</span></h1>
-          <p className="text-[10px] text-zinc-500 uppercase">Evaluador de Fraude Adulto v5.0</p>
+          <p className="text-[10px] text-zinc-500 uppercase">Estado: DB Sync</p>
         </header>
 
         {view === 'LANDING' && (
           <div className="border border-zinc-800 p-8 text-center bg-zinc-950 animate-fade-in">
             <h2 className="text-2xl font-bold mb-4">¿Realmente eres un adulto o solo estás improvisando?</h2>
-            <p className="text-zinc-400 mb-8 max-w-lg mx-auto">La mayoría de la gente finge éxito mientras sus cimientos se desmoronan. Este test expone qué tan avanzado es tu nivel de "fraude" en la vida adulta.</p>
             <button onClick={() => setView('FORM')} className="bg-zinc-100 text-black px-8 py-3 font-bold uppercase hover:bg-[#00FF41]">Iniciar Evaluación</button>
           </div>
         )}
@@ -73,12 +74,17 @@ export default function App() {
         )}
 
         {view === 'TEST' && (
-          <div className="border border-zinc-800 p-8 bg-zinc-950 animate-fade-in">
-            <p className="text-[#00FF41] mb-6 text-xl">{questions[currentQuestion].q}</p>
-            <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+            <div className="border border-zinc-800 p-6 bg-zinc-950">
+              <p className="text-[#00FF41] mb-6 text-lg">{questions[currentQuestion].q}</p>
               {questions[currentQuestion].options.map((opt, i) => (
-                <button key={i} onClick={() => handleAnswer(questions[currentQuestion].weights[i], questions[currentQuestion].category)} className="w-full text-left p-4 border border-zinc-700 hover:bg-zinc-800">{opt}</button>
+                <button key={i} onClick={() => handleAnswer(questions[currentQuestion].weights[i], questions[currentQuestion].category)} className="w-full text-left p-4 border border-zinc-700 hover:bg-zinc-800 mb-3">{opt}</button>
               ))}
+            </div>
+            <div className="border border-zinc-800 p-6 bg-zinc-950">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={liveChartData}><CartesianGrid strokeDasharray="3 3" stroke="#27272a"/><XAxis dataKey="categoria" stroke="#71717a"/><YAxis domain={[0, 100]} stroke="#71717a"/><Tooltip contentStyle={{backgroundColor: '#09090b'}}/><Legend/><Bar dataKey="Nivel de Fraude" fill="#ef4444"/><Bar dataKey="Promedio Global" fill="#27272a"/></BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
@@ -89,20 +95,17 @@ export default function App() {
               <p className="text-2xl font-bold">Diagnóstico: <span className={getRec().color}>{getRec().title}</span></p>
               <p className="text-5xl font-black mt-4">{finalPercentage}% FRAUDE</p>
             </div>
-
             <div className="border border-zinc-800 p-6 bg-zinc-950">
-              <h3 className="text-zinc-400 mb-6 uppercase tracking-widest text-sm">Correlación: Edad vs. Nivel de Fraude (100 = Máximo Fraude)</h3>
+              <h3 className="text-zinc-400 mb-6 uppercase text-sm">Correlación: Edad vs. Fraude</h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{top: 20, right: 20, bottom: 20, left: 20}}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis type="number" dataKey="edad" name="Edad" stroke="#71717a" label={{ value: 'Edad', position: 'bottom', fill: '#71717a' }} />
-                    <YAxis type="number" dataKey="fraude" name="Fraude" stroke="#71717a" domain={[0, 100]} label={{ value: '% Fraude Adulto', angle: -90, position: 'left', fill: '#71717a' }} />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{backgroundColor: '#09090b', border: '1px solid #27272a'}} />
-                    <Scatter name="Operadores" data={dbRecords} fill="#00FF41" />
-                  </ScatterChart>
-                </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a"/><YAxis type="number" dataKey="fraude" stroke="#71717a"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer>
               </div>
+            </div>
+            <div className="border border-zinc-800 p-6 bg-zinc-950">
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead><tr className="border-b border-zinc-800 text-zinc-500"><th className="pb-2">OPERADOR</th><th className="pb-2">EDAD</th><th className="pb-2 text-right">FRAUDE</th></tr></thead>
+                <tbody>{dbRecords.map(r => <tr key={r.id} className="border-b border-zinc-900"><td>{r.nombre}</td><td>{r.edad}</td><td className="text-right">{r.fraude}%</td></tr>)}</tbody>
+              </table>
             </div>
           </div>
         )}
