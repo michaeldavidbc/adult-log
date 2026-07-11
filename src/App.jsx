@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Database, Activity } from 'lucide-react';
+import { Terminal, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash, ShieldCheck, Zap } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, ScatterChart, Scatter } from 'recharts';
 import { supabase } from './supabase'; 
 
@@ -24,17 +24,7 @@ export default function App() {
     if (data) setDbRecords(data);
   };
 
-  const handleInputChange = (e) => setUserData({ ...userData, [e.target.name]: e.target.value });
-  
-  const startTest = (e) => { 
-    e.preventDefault(); 
-    // Validación estricta de los 3 campos
-    if (userData.nombre.trim() !== '' && userData.edad.trim() !== '' && userData.profesion.trim() !== '') {
-      setView('TEST');
-    } else {
-      alert("Por favor, completa Nombre, Edad y Profesión para continuar.");
-    }
-  };
+  const startTest = (e) => { e.preventDefault(); if (userData.nombre && userData.edad && userData.profesion) setView('TEST'); };
 
   const handleAnswer = async (weight, category) => {
     const newScores = { ...categoryScores, [category]: Math.min(categoryScores[category] + weight, 100) };
@@ -45,17 +35,17 @@ export default function App() {
       const finalPct = Math.min(Math.round((totalScore / 500) * 100), 100);
       let statusStr = finalPct <= 30 ? 'OPERATIVO' : finalPct <= 60 ? 'RIESGO MODERADO' : 'COLAPSO ESTRUCTURAL';
       const newRecord = { nombre: userData.nombre, edad: parseInt(userData.edad), cargo: userData.profesion, fraude: finalPct, status: statusStr };
-      const { data } = await supabase.from('telemetria').insert([newRecord]).select();
-      if (data) setDbRecords(prev => [data[0], ...prev]);
-      setView('RESULTS');
+      await supabase.from('telemetria').insert([newRecord]);
+      fetchRecords();
+      setView('RESULTS_BANNER');
     }
   };
 
   const finalPercentage = Math.min(Math.round((Object.values(categoryScores).reduce((a, b) => a + b, 0) / 500) * 100), 100);
   const getRec = () => {
-    if (finalPercentage <= 30) return { title: 'OPERATIVO', level: 'Bajo Riesgo', desc: 'Tu sistema es estable. Mantén la disciplina.', color: 'text-[#00FF41]', border: 'border-[#00FF41]', plan: 'basic' };
-    if (finalPercentage <= 60) return { title: 'RIESGO MODERADO', level: 'Alerta Amarilla', desc: 'Estás improvisando demasiado. Necesitas optimización logística.', color: 'text-yellow-500', border: 'border-yellow-500', plan: 'standard' };
-    return { title: 'COLAPSO ESTRUCTURAL', level: 'Falla Crítica', desc: 'No tienes el control. Necesitas intervención externa urgente.', color: 'text-red-500', border: 'border-red-500', plan: 'vip' };
+    if (finalPercentage <= 30) return { title: 'OPERATIVO', color: 'text-[#00FF41]', border: 'border-[#00FF41]', drama: "Has evadido la realidad con éxito. Eres un adulto 'funcional' (por ahora). Tu sistema está estable, pero no te confíes." };
+    if (finalPercentage <= 60) return { title: 'RIESGO MODERADO', color: 'text-yellow-500', border: 'border-yellow-500', drama: "Tu vida es un equilibrio precario. Estás a un contratiempo financiero de que tu fachada de adulto responsable se desplome como un castillo de naipes." };
+    return { title: 'COLAPSO ESTRUCTURAL', color: 'text-red-500', border: 'border-red-500', drama: "¡Alerta Roja! Tu nivel de fraude es tan alto que incluso el sistema está confundido. Ya no eres un adulto, eres un caos organizado esperando una catástrofe." };
   };
 
   return (
@@ -63,24 +53,22 @@ export default function App() {
       <div className="max-w-5xl mx-auto">
         <header className="border-b border-zinc-800 pb-4 mb-8 flex justify-between items-center sticky top-0 bg-[#0a0a0a] z-50">
           <h1 className="text-3xl font-black text-zinc-100 animate-pulse">Adult<span className="text-[#00FF41]">.Log</span></h1>
-          <p className="text-[10px] text-zinc-500 uppercase">Estado: {view} // DB Synced</p>
+          <p className="text-[10px] text-zinc-500 uppercase">Sistema de Rescate Operativo Activo</p>
         </header>
 
         {view === 'LANDING' && (
-          <div className="border border-zinc-800 p-8 text-center bg-zinc-950 animate-fade-in mt-12">
+          <div className="border border-zinc-800 p-8 text-center bg-zinc-950 mt-12 animate-fade-in">
             <h2 className="text-2xl font-bold mb-4">¿Adultez o Improvisación Constante?</h2>
-            <p className="text-zinc-400 mb-8 max-w-lg mx-auto text-sm leading-relaxed">
-              La adultez es un fraude en el que todos caemos. Creemos que tenemos el control, pero la mayoría solo está improvisando una serie de eventos catastróficos. Este sistema mide qué tan cerca estás del colapso operativo.
-            </p>
-            <button onClick={() => setView('FORM')} className="bg-zinc-100 text-black px-8 py-3 font-bold uppercase hover:bg-[#00FF41]">Inicializar Diagnóstico</button>
+            <p className="text-zinc-400 mb-8 max-w-lg mx-auto text-sm">La adultez es un fraude. Creemos tener el control, pero solo improvisamos eventos catastróficos. Descubre tu nivel de colapso.</p>
+            <button onClick={() => setView('FORM')} className="bg-zinc-100 text-black px-8 py-3 font-bold uppercase hover:bg-[#00FF41]">Iniciar Diagnóstico</button>
           </div>
         )}
 
         {view === 'FORM' && (
           <form onSubmit={startTest} className="max-w-md mx-auto border border-zinc-800 p-8 bg-zinc-950 space-y-4 mt-12">
-            <input required type="text" name="nombre" placeholder="Nombre de Operador" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
-            <input required type="number" name="edad" placeholder="Edad" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
-            <input required type="text" name="profesion" placeholder="Profesión" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
+            <input required type="text" placeholder="Nombre" onChange={(e) => setUserData({...userData, nombre: e.target.value})} className="w-full bg-zinc-900 border p-3" />
+            <input required type="number" placeholder="Edad" onChange={(e) => setUserData({...userData, edad: e.target.value})} className="w-full bg-zinc-900 border p-3" />
+            <input required type="text" placeholder="Profesión" onChange={(e) => setUserData({...userData, profesion: e.target.value})} className="w-full bg-zinc-900 border p-3" />
             <button type="submit" className="w-full bg-[#00FF41] text-black font-bold p-3">Conectar</button>
           </form>
         )}
@@ -94,41 +82,47 @@ export default function App() {
               ))}
             </div>
             <div className="border border-zinc-800 p-6 bg-zinc-950 flex flex-col items-center justify-center">
-              <span className="text-xs text-zinc-500 mb-4 uppercase">Telemetría de Riesgo</span>
+              <span className="text-xs text-zinc-500 mb-4 uppercase">Telemetría Cruda</span>
               <ResponsiveContainer width="100%" height={200}><BarChart data={Object.keys(categoryScores).map(k => ({cat: k, val: categoryScores[k]}))}><XAxis dataKey="cat" stroke="#71717a" fontSize={10}/><Bar dataKey="val" fill="#ef4444"/></BarChart></ResponsiveContainer>
             </div>
           </div>
         )}
 
-        {view === 'RESULTS' && (
-          <div className="space-y-8 animate-fade-in mt-8">
-            <div className={`border p-8 text-center ${getRec().border}`}>
-              <p className="text-2xl font-bold">ESTADO: <span className={getRec().color}>{getRec().title}</span></p>
-              <p className="text-5xl font-black mt-4">{finalPercentage}% FRAUDE</p>
-              <p className="mt-4 text-zinc-400 text-sm">{getRec().desc}</p>
-            </div>
+        {view === 'RESULTS_BANNER' && (
+          <div className="animate-fade-in text-center mt-12 p-8 border border-zinc-800 bg-zinc-950">
+            <h2 className="text-4xl font-black mb-4">DIAGNÓSTICO: <span className={getRec().color}>{getRec().title}</span></h2>
+            <p className="text-xl text-zinc-300 italic mb-8">"{getRec().drama}"</p>
+            <p className="text-6xl font-black mb-8">{finalPercentage}% FRAUDE</p>
+            <button onClick={() => setView('SERVICES')} className="bg-[#00FF41] text-black px-12 py-4 font-bold uppercase text-lg hover:bg-white transition-all">Ver Soluciones de Rescate</button>
+          </div>
+        )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {view === 'SERVICES' && (
+          <div className="space-y-8 animate-fade-in mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { title: 'Mantenimiento Básico', desc: 'Servicio preventivo. Incluye recordatorios de hidratación, gestión de agenda simple y seguimiento de tareas básicas para no olvidar lo esencial de la vida cotidiana.', highlight: getRec().plan === 'basic' },
-                { title: 'Soporte Logístico', desc: 'Optimización de entorno. Monitoreo de caducidad en nevera, automatización de pagos recurrentes y gestión de inventarios para evitar el caos doméstico.', highlight: getRec().plan === 'standard' },
-                { title: 'Outsourcing Total', desc: 'Rescate de emergencia. Delegación completa de carga mental, conciliación contable personal y asistente dedicado para gestionar crisis domésticas 24/7.', highlight: getRec().plan === 'vip' }
+                { title: 'Alquiler de Adulto', price: '$9.99', desc: '¿Tienes miedo de una llamada telefónica o necesitas que alguien firme un documento con seriedad? Alquilamos un Adulto Responsable (1hr). No titubea, no llora, no tiene miedo al sistema.' },
+                { title: 'Soporte Logístico', price: '$49.99', desc: 'Tu nevera es un cementerio de vegetales y tu agenda es un acto de fe. Organizamos tu caos, pagamos tus facturas y te aseguramos que no vivirás a base de domicilios.' },
+                { title: 'Rescate Ejecutivo', price: '$299.99', desc: 'Si has llegado hasta aquí, probablemente ya no tienes remedio. Tomamos control de tu vida, tus finanzas y tu dignidad. Si esto no te salva, nada lo hará.' }
               ].map((s, i) => (
-                <div key={i} className={`border p-6 flex flex-col justify-between ${s.highlight ? 'bg-zinc-900 border-[#00FF41]' : 'bg-zinc-950 border-zinc-800'}`}>
+                <div key={i} className="border border-zinc-800 p-6 bg-zinc-950 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold mb-2 text-sm">{s.title}</h3>
-                    <p className="text-xs text-zinc-400 mb-6 leading-relaxed">{s.desc}</p>
+                    <h3 className="font-bold mb-2 text-lg text-[#00FF41]">{s.title}</h3>
+                    <p className="text-xs text-zinc-400 mb-6 leading-relaxed italic">{s.desc}</p>
                   </div>
-                  <button className="w-full py-2 border border-zinc-700 hover:bg-zinc-800 uppercase font-bold text-xs">Contratar</button>
+                  <div className="mt-auto">
+                    <p className="text-2xl font-bold mb-4">{s.price}</p>
+                    <button className="w-full py-3 bg-zinc-800 border border-zinc-700 hover:bg-[#00FF41] hover:text-black uppercase font-bold text-sm">Comprar Salvamento</button>
+                  </div>
                 </div>
               ))}
             </div>
-
+            
+            {/* Tabla de DB */}
             <div className="border border-zinc-800 p-6 bg-zinc-950">
-              <h3 className="text-zinc-400 mb-6 text-sm uppercase tracking-widest">Correlación: Edad vs. Nivel de Fraude</h3>
-              <div className="h-64"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a" name="Edad"/><YAxis type="number" dataKey="fraude" stroke="#71717a" name="Fraude"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer></div>
-              <table className="w-full text-left text-xs text-zinc-300 mt-8 border-t border-zinc-800 pt-4">
-                <thead><tr className="text-zinc-500 uppercase"><th className="pb-2">Operador</th><th className="pb-2">Edad</th><th className="pb-2 text-right">Fraude</th></tr></thead>
+              <h3 className="text-zinc-400 mb-6 text-sm uppercase tracking-widest">Base de Datos de Operadores</h3>
+              <table className="w-full text-left text-xs text-zinc-300">
+                <thead><tr className="text-zinc-500 uppercase border-b border-zinc-800"><th className="pb-2">Operador</th><th className="pb-2">Edad</th><th className="pb-2 text-right">Fraude</th></tr></thead>
                 <tbody>{dbRecords.map(r => <tr key={r.id} className="border-b border-zinc-900"><td>{r.nombre}</td><td>{r.edad}</td><td className="text-right">{r.fraude}%</td></tr>)}</tbody>
               </table>
             </div>
