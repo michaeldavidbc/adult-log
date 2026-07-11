@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase } from 'lucide-react';
+import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 
 export default function App() {
-  // --- ESTADO DE LA APLICACIÓN (MÁQUINA DE ESTADOS) ---
-  const [view, setView] = useState('LANDING'); // LANDING, FORM, TEST, RESULTS
+  // --- ESTADO DE LA APLICACIÓN ---
+  const [view, setView] = useState('LANDING'); 
   
-  // --- DATOS DEL USUARIO ---
-  const [userData, setUserData] = useState({ nombre: '', cargo: '' });
+  // --- DATOS DEL USUARIO (Ahora incluye Edad) ---
+  const [userData, setUserData] = useState({ nombre: '', cargo: '', edad: '' });
   
   // --- LÓGICA DEL CUESTIONARIO ---
   const [currentQuestion, setCurrentQuestion] = useState(0);
   
-  // Puntuación separada por categorías para la gráfica en vivo
   const [categoryScores, setCategoryScores] = useState({
     Finanzas: 0,
     Hogar: 0,
@@ -20,7 +19,16 @@ export default function App() {
     Logística: 0
   });
 
-  // Base de datos simulada (El promedio de las 100 encuestas previas)
+  // --- BASE DE DATOS SIMULADA (Histórico) ---
+  // Inicializamos con algunos registros para que la tabla no esté vacía.
+  const [dbRecords, setDbRecords] = useState([
+    { id: 'SYS-892', nombre: 'Carlos M.', edad: 34, cargo: 'Backend Dev', fraude: 82, status: 'COLAPSO ESTRUCTURAL' },
+    { id: 'SYS-893', nombre: 'Laura G.', edad: 29, cargo: 'Project Manager', fraude: 45, status: 'RIESGO MODERADO' },
+    { id: 'SYS-894', nombre: 'Andrés F.', edad: 41, cargo: 'Director Médico', fraude: 90, status: 'COLAPSO ESTRUCTURAL' },
+    { id: 'SYS-895', nombre: 'Sofía T.', edad: 25, cargo: 'Marketing', fraude: 20, status: 'OPERATIVO' },
+    { id: 'SYS-896', nombre: 'Diego R.', edad: 31, cargo: 'Stage Manager', fraude: 68, status: 'COLAPSO ESTRUCTURAL' },
+  ]);
+
   const GLOBAL_DB_AVERAGE = {
     Finanzas: 55,
     Hogar: 42,
@@ -33,7 +41,7 @@ export default function App() {
       category: "Finanzas",
       q: "¿Con qué frecuencia revisas tu estado de cuenta bancario y flujo de caja?",
       options: ["[A] Sistemáticamente, con proyecciones.", "[B] Solo cuando la tarjeta es rechazada.", "[C] El contador me persigue para cuadrar esto."],
-      weights: [0, 50, 100] // 0 = Buen adulto, 100 = Fraude
+      weights: [0, 50, 100] 
     },
     {
       category: "Hogar",
@@ -68,22 +76,39 @@ export default function App() {
 
   const startTest = (e) => {
     e.preventDefault();
-    if (userData.nombre.trim() !== '') {
+    if (userData.nombre.trim() !== '' && userData.edad.trim() !== '') {
       setView('TEST');
     }
   };
 
   const handleAnswer = (weight, category) => {
-    // Sumamos el peso a la categoría correspondiente
-    setCategoryScores(prev => {
-      const newScore = prev[category] + weight;
-      // Normalizamos temporalmente para que no pase de 100 en la gráfica
-      return { ...prev, [category]: Math.min(newScore, 100) };
-    });
+    const newScores = { ...categoryScores, [category]: Math.min(categoryScores[category] + weight, 100) };
+    setCategoryScores(newScores);
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
+      // Calcular puntaje final para guardar en la Base de Datos
+      const totalScore = Object.values(newScores).reduce((a, b) => a + b, 0);
+      const finalPct = Math.min(Math.round((totalScore / 500) * 100), 100);
+      
+      let statusStr = 'COLAPSO ESTRUCTURAL';
+      if (finalPct <= 30) statusStr = 'OPERATIVO';
+      else if (finalPct <= 60) statusStr = 'RIESGO MODERADO';
+
+      // Crear el nuevo registro
+      const newRecord = {
+        id: `SYS-${Math.floor(1000 + Math.random() * 9000)}`,
+        nombre: userData.nombre,
+        edad: userData.edad,
+        cargo: userData.cargo || 'No especificado',
+        fraude: finalPct,
+        status: statusStr
+      };
+
+      // Guardar en la DB simulada (añadiéndolo al principio de la lista)
+      setDbRecords(prev => [newRecord, ...prev]);
+      
       setView('RESULTS');
     }
   };
@@ -95,10 +120,9 @@ export default function App() {
     "Promedio Global (n=100)": GLOBAL_DB_AVERAGE[key]
   }));
 
-  // Puntuación global calculada al final
+  // Puntuación global actual
   const totalScore = Object.values(categoryScores).reduce((a, b) => a + b, 0);
-  const maxPossibleScore = 500; // 5 preguntas * 100 max
-  const finalPercentage = Math.min(Math.round((totalScore / maxPossibleScore) * 100), 100);
+  const finalPercentage = Math.min(Math.round((totalScore / 500) * 100), 100);
 
   const getRecommendation = () => {
     if (finalPercentage <= 30) return { plan: 'basic', title: 'OPERATIVO', color: 'text-[#00FF41]', border: 'border-[#00FF41]' };
@@ -112,19 +136,15 @@ export default function App() {
     <div className="animate-fade-in max-w-2xl mx-auto mt-12 space-y-8">
       <div className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm text-center">
         <Activity className="mx-auto text-zinc-400 mb-6" size={48} />
-        
         <h2 className="text-2xl md:text-3xl font-bold mb-4 text-zinc-100">
           Diagnóstico de Simulación de Adultez
         </h2>
-        
         <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6">
           Estadísticamente, el 85% de nuestra generación está simplemente improvisando. Has dominado el arte de parecer que tienes todo bajo control en público, pero la telemetría no miente. Las mentes más dinámicas suelen presentar fallas críticas cuando se trata de gestionar la infraestructura básica de su propia existencia.
         </p>
-        
         <p className="text-zinc-500 text-xs uppercase tracking-widest mb-8 border-l-2 border-zinc-700 pl-4 text-left">
           Adult.Log cruzará tus respuestas con una base de datos global para calcular, en tiempo real, tu nivel exacto de fraude operativo.
         </p>
-        
         <button onClick={() => setView('FORM')} className="bg-zinc-100 text-black px-8 py-3 text-sm font-bold uppercase hover:bg-[#00FF41] transition-colors w-full md:w-auto">
           Inicializar Diagnóstico
         </button>
@@ -140,7 +160,7 @@ export default function App() {
           <h2 className="text-sm uppercase tracking-widest">Registro en Base de Datos</h2>
         </div>
         
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div>
             <label className="flex items-center gap-2 text-xs text-zinc-500 uppercase mb-2"><User size={14}/> ID de Operador (Nombre)</label>
             <input 
@@ -153,18 +173,37 @@ export default function App() {
               placeholder="Ej: Michael David"
             />
           </div>
-          <div>
-            <label className="flex items-center gap-2 text-xs text-zinc-500 uppercase mb-2"><Briefcase size={14}/> Cargo / Rol Principal</label>
-            <input 
-              type="text" 
-              name="cargo"
-              value={userData.cargo}
-              onChange={handleInputChange}
-              className="w-full bg-zinc-900 border border-zinc-700 focus:border-[#00FF41] focus:ring-1 focus:ring-[#00FF41] text-zinc-100 p-3 outline-none text-sm font-mono transition-all"
-              placeholder="Ej: Data Analytics, Director, etc."
-            />
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-1">
+              <label className="flex items-center gap-2 text-xs text-zinc-500 uppercase mb-2"><Hash size={14}/> Edad</label>
+              <input 
+                required
+                type="number" 
+                name="edad"
+                min="18"
+                max="99"
+                value={userData.edad}
+                onChange={handleInputChange}
+                className="w-full bg-zinc-900 border border-zinc-700 focus:border-[#00FF41] focus:ring-1 focus:ring-[#00FF41] text-zinc-100 p-3 outline-none text-sm font-mono transition-all text-center"
+                placeholder="25"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="flex items-center gap-2 text-xs text-zinc-500 uppercase mb-2"><Briefcase size={14}/> Cargo / Rol</label>
+              <input 
+                required
+                type="text" 
+                name="cargo"
+                value={userData.cargo}
+                onChange={handleInputChange}
+                className="w-full bg-zinc-900 border border-zinc-700 focus:border-[#00FF41] focus:ring-1 focus:ring-[#00FF41] text-zinc-100 p-3 outline-none text-sm font-mono transition-all"
+                placeholder="Ej: Data Analytics"
+              />
+            </div>
           </div>
-          <button type="submit" className="w-full bg-zinc-800 text-zinc-100 border border-zinc-600 px-4 py-3 text-sm font-bold uppercase hover:bg-zinc-100 hover:text-black transition-colors mt-4">
+
+          <button type="submit" className="w-full bg-zinc-800 text-zinc-100 border border-zinc-600 px-4 py-3 text-sm font-bold uppercase hover:bg-zinc-100 hover:text-black transition-colors mt-6">
             Conectar y Evaluar
           </button>
         </div>
@@ -179,7 +218,7 @@ export default function App() {
         <div>
           <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
             <span className="text-xs text-[#00FF41] font-bold uppercase tracking-widest">
-              Analizando a: {userData.nombre}
+              Analizando a: {userData.nombre} [Edad: {userData.edad}]
             </span>
             <span className="text-xs text-zinc-500">
               Q {currentQuestion + 1} / {questions.length}
@@ -189,7 +228,7 @@ export default function App() {
           <div className="text-xs text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
             <Activity size={14} /> Vector: {questions[currentQuestion].category}
           </div>
-          <h3 className="text-zinc-200 text-lg mb-8 h-20">
+          <h3 className="text-zinc-200 text-lg mb-8 min-h-[5rem]">
             {questions[currentQuestion].q}
           </h3>
         </div>
@@ -237,6 +276,7 @@ export default function App() {
     const rec = getRecommendation();
     return (
       <div className="space-y-8 animate-fade-in mt-8">
+        {/* Diagnóstico Final */}
         <div className={`border p-6 text-center rounded-sm bg-zinc-950 ${rec.border}`}>
           {finalPercentage > 60 ? (
             <AlertTriangle className="mx-auto text-red-500 mb-2 animate-bounce" size={44} />
@@ -247,13 +287,13 @@ export default function App() {
             AUDITORÍA FINALIZADA PARA: <span className="uppercase">{userData.nombre}</span>
           </h2>
           <h3 className="text-sm mb-4 text-zinc-400">
-            Cargo reportado: <span className="text-zinc-300">{userData.cargo || 'No especificado'}</span>
+            Edad: {userData.edad} | Cargo: <span className="text-zinc-300">{userData.cargo}</span>
           </h3>
           <p className={`text-2xl font-black ${rec.color}`}>DIAGNÓSTICO: {rec.title} ({finalPercentage}% Fraude)</p>
         </div>
 
+        {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Plan Básico */}
           <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${rec.plan === 'basic' ? 'border-[#00FF41] bg-zinc-900/30' : 'border-zinc-800 bg-zinc-950 opacity-50'}`}>
             <div>
               <h3 className="font-bold text-zinc-200 mb-2">Mantenimiento Básico</h3>
@@ -268,7 +308,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Plan Estándar */}
           <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${rec.plan === 'standard' ? 'border-yellow-500 bg-zinc-900/30' : 'border-zinc-800 bg-zinc-950 opacity-50'}`}>
             <div>
               <h3 className="font-bold text-zinc-200 mb-2">Soporte Logístico</h3>
@@ -283,7 +322,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Plan VIP */}
           <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${rec.plan === 'vip' ? 'border-red-500 bg-zinc-900/30 ring-1 ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-zinc-800 bg-zinc-950 opacity-50'}`}>
             <div>
               <div className="flex justify-between items-start mb-2">
@@ -300,6 +338,41 @@ export default function App() {
             <button className={`w-full py-2 text-xs font-bold rounded-sm border ${rec.plan === 'vip' ? 'bg-red-500 text-white border-red-500' : 'border-zinc-700 text-zinc-400'}`}>
               CONTRATAR SALVAMENTO
             </button>
+          </div>
+        </div>
+
+        {/* Tabla de Base de Datos */}
+        <div className="mt-16 border border-zinc-800 bg-zinc-950 p-4 md:p-6 rounded-sm overflow-hidden">
+          <h3 className="text-sm text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2 border-b border-zinc-800 pb-4">
+            <Database size={16} /> Registro de Telemetría (Últimos 50 Operadores)
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs whitespace-nowrap">
+              <thead className="text-zinc-500 border-b border-zinc-800">
+                <tr>
+                  <th className="pb-3 font-normal px-2">ID_SYS</th>
+                  <th className="pb-3 font-normal px-2">OPERADOR</th>
+                  <th className="pb-3 font-normal px-2">EDAD</th>
+                  <th className="pb-3 font-normal px-2">CARGO</th>
+                  <th className="pb-3 font-normal text-right px-2">NIVEL FRAUDE</th>
+                  <th className="pb-3 font-normal text-right px-2">ESTADO DE OPERACIÓN</th>
+                </tr>
+              </thead>
+              <tbody className="text-zinc-300">
+                {dbRecords.slice(0, 50).map((record, idx) => (
+                  <tr key={idx} className="border-b border-zinc-900 hover:bg-zinc-900/50 transition-colors">
+                    <td className="py-3 px-2 text-zinc-500 font-mono">{record.id}</td>
+                    <td className="py-3 px-2 uppercase">{record.nombre}</td>
+                    <td className="py-3 px-2">{record.edad}</td>
+                    <td className="py-3 px-2 uppercase text-zinc-400">{record.cargo}</td>
+                    <td className="py-3 px-2 text-right font-bold font-mono">{record.fraude}%</td>
+                    <td className={`py-3 px-2 text-right font-bold ${record.status === 'OPERATIVO' ? 'text-[#00FF41]' : record.status === 'RIESGO MODERADO' ? 'text-yellow-500' : 'text-red-500'}`}>
+                      {record.status}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -322,11 +395,11 @@ export default function App() {
           </div>
           <div className="text-right hidden md:block">
             <p className="text-[10px] text-zinc-500 uppercase">Estado del Servidor: <span className="text-[#00FF41]">Online</span></p>
-            <p className="text-[10px] text-zinc-500 uppercase">Conexión DB: <span className="text-[#00FF41]">Estable (100 Records)</span></p>
+            <p className="text-[10px] text-zinc-500 uppercase">Conexión DB: <span className="text-[#00FF41]">Estable (Syncing...)</span></p>
           </div>
         </header>
 
-        {/* Renderizado Condicional de la Máquina de Estados */}
+        {/* Renderizado Condicional */}
         {view === 'LANDING' && renderLanding()}
         {view === 'FORM' && renderForm()}
         {view === 'TEST' && renderTest()}
@@ -334,7 +407,7 @@ export default function App() {
         
         {/* Footer */}
         <footer className="mt-16 text-center text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-6 tracking-widest">
-          SYS::ADULT_VERIFICATION_DAEMON v3.0 | MÓDULO DE RECOLECCIÓN DE DATOS ACTIVO
+          SYS::ADULT_VERIFICATION_DAEMON v3.1 | MÓDULO DE RECOLECCIÓN DE DATOS ACTIVO
         </footer>
       </div>
     </div>
