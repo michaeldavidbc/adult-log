@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash, ShieldCheck } from 'lucide-react';
+import { Terminal, Database, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, ScatterChart, Scatter } from 'recharts';
 import { supabase } from './supabase'; 
 
 export default function App() {
   const [view, setView] = useState('LANDING'); 
-  const [userData, setUserData] = useState({ nombre: '', cargo: '', edad: '' });
+  const [userData, setUserData] = useState({ nombre: '', profesion: '', edad: '' });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [dbRecords, setDbRecords] = useState([]); 
   const [categoryScores, setCategoryScores] = useState({ Finanzas: 0, Hogar: 0, Salud: 0, Logística: 0 });
@@ -24,6 +24,18 @@ export default function App() {
     if (data) setDbRecords(data);
   };
 
+  const handleInputChange = (e) => setUserData({ ...userData, [e.target.name]: e.target.value });
+  
+  const startTest = (e) => { 
+    e.preventDefault(); 
+    // Validación estricta de los 3 campos
+    if (userData.nombre.trim() !== '' && userData.edad.trim() !== '' && userData.profesion.trim() !== '') {
+      setView('TEST');
+    } else {
+      alert("Por favor, completa Nombre, Edad y Profesión para continuar.");
+    }
+  };
+
   const handleAnswer = async (weight, category) => {
     const newScores = { ...categoryScores, [category]: Math.min(categoryScores[category] + weight, 100) };
     setCategoryScores(newScores);
@@ -32,7 +44,7 @@ export default function App() {
       const totalScore = Object.values(newScores).reduce((a, b) => a + b, 0);
       const finalPct = Math.min(Math.round((totalScore / 500) * 100), 100);
       let statusStr = finalPct <= 30 ? 'OPERATIVO' : finalPct <= 60 ? 'RIESGO MODERADO' : 'COLAPSO ESTRUCTURAL';
-      const newRecord = { nombre: userData.nombre, edad: parseInt(userData.edad), cargo: userData.cargo || 'N/A', fraude: finalPct, status: statusStr };
+      const newRecord = { nombre: userData.nombre, edad: parseInt(userData.edad), cargo: userData.profesion, fraude: finalPct, status: statusStr };
       const { data } = await supabase.from('telemetria').insert([newRecord]).select();
       if (data) setDbRecords(prev => [data[0], ...prev]);
       setView('RESULTS');
@@ -65,10 +77,10 @@ export default function App() {
         )}
 
         {view === 'FORM' && (
-          <form onSubmit={(e) => { e.preventDefault(); if (userData.nombre && userData.edad) setView('TEST'); }} className="max-w-md mx-auto border border-zinc-800 p-8 bg-zinc-950 space-y-4 mt-12">
-            <input required type="text" placeholder="Nombre de Operador" onChange={(e) => setUserData({...userData, nombre: e.target.value})} className="w-full bg-zinc-900 border p-3" />
-            <input required type="number" placeholder="Edad" onChange={(e) => setUserData({...userData, edad: e.target.value})} className="w-full bg-zinc-900 border p-3" />
-            <input type="text" placeholder="Cargo/Rol" onChange={(e) => setUserData({...userData, cargo: e.target.value})} className="w-full bg-zinc-900 border p-3" />
+          <form onSubmit={startTest} className="max-w-md mx-auto border border-zinc-800 p-8 bg-zinc-950 space-y-4 mt-12">
+            <input required type="text" name="nombre" placeholder="Nombre de Operador" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
+            <input required type="number" name="edad" placeholder="Edad" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
+            <input required type="text" name="profesion" placeholder="Profesión" onChange={handleInputChange} className="w-full bg-zinc-900 border p-3" />
             <button type="submit" className="w-full bg-[#00FF41] text-black font-bold p-3">Conectar</button>
           </form>
         )}
@@ -82,7 +94,7 @@ export default function App() {
               ))}
             </div>
             <div className="border border-zinc-800 p-6 bg-zinc-950 flex flex-col items-center justify-center">
-              <span className="text-xs text-zinc-500 mb-4 uppercase">Telemetría en tiempo real</span>
+              <span className="text-xs text-zinc-500 mb-4 uppercase">Telemetría de Riesgo</span>
               <ResponsiveContainer width="100%" height={200}><BarChart data={Object.keys(categoryScores).map(k => ({cat: k, val: categoryScores[k]}))}><XAxis dataKey="cat" stroke="#71717a" fontSize={10}/><Bar dataKey="val" fill="#ef4444"/></BarChart></ResponsiveContainer>
             </div>
           </div>
@@ -93,26 +105,28 @@ export default function App() {
             <div className={`border p-8 text-center ${getRec().border}`}>
               <p className="text-2xl font-bold">ESTADO: <span className={getRec().color}>{getRec().title}</span></p>
               <p className="text-5xl font-black mt-4">{finalPercentage}% FRAUDE</p>
-              <p className="mt-4 text-zinc-400">{getRec().desc}</p>
+              <p className="mt-4 text-zinc-400 text-sm">{getRec().desc}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { title: 'Mantenimiento Básico', desc: 'Optimización de hábitos diarios. Ideal para operativos estables.', highlight: getRec().plan === 'basic' },
-                { title: 'Soporte Logístico', desc: 'Reestructuración de finanzas y logística doméstica.', highlight: getRec().plan === 'standard' },
-                { title: 'Outsourcing Total', desc: 'Rescate de emergencia. Delegación completa de carga mental.', highlight: getRec().plan === 'vip' }
+                { title: 'Mantenimiento Básico', desc: 'Servicio preventivo. Incluye recordatorios de hidratación, gestión de agenda simple y seguimiento de tareas básicas para no olvidar lo esencial de la vida cotidiana.', highlight: getRec().plan === 'basic' },
+                { title: 'Soporte Logístico', desc: 'Optimización de entorno. Monitoreo de caducidad en nevera, automatización de pagos recurrentes y gestión de inventarios para evitar el caos doméstico.', highlight: getRec().plan === 'standard' },
+                { title: 'Outsourcing Total', desc: 'Rescate de emergencia. Delegación completa de carga mental, conciliación contable personal y asistente dedicado para gestionar crisis domésticas 24/7.', highlight: getRec().plan === 'vip' }
               ].map((s, i) => (
-                <div key={i} className={`border p-6 ${s.highlight ? 'bg-zinc-900 border-[#00FF41]' : 'bg-zinc-950 border-zinc-800'}`}>
-                  <h3 className="font-bold mb-2">{s.title}</h3>
-                  <p className="text-xs text-zinc-400 mb-6">{s.desc}</p>
+                <div key={i} className={`border p-6 flex flex-col justify-between ${s.highlight ? 'bg-zinc-900 border-[#00FF41]' : 'bg-zinc-950 border-zinc-800'}`}>
+                  <div>
+                    <h3 className="font-bold mb-2 text-sm">{s.title}</h3>
+                    <p className="text-xs text-zinc-400 mb-6 leading-relaxed">{s.desc}</p>
+                  </div>
                   <button className="w-full py-2 border border-zinc-700 hover:bg-zinc-800 uppercase font-bold text-xs">Contratar</button>
                 </div>
               ))}
             </div>
 
             <div className="border border-zinc-800 p-6 bg-zinc-950">
-              <h3 className="text-zinc-400 mb-6 text-sm">Correlación: Edad vs. Nivel de Fraude</h3>
-              <div className="h-64"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a"/><YAxis type="number" dataKey="fraude" stroke="#71717a"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer></div>
+              <h3 className="text-zinc-400 mb-6 text-sm uppercase tracking-widest">Correlación: Edad vs. Nivel de Fraude</h3>
+              <div className="h-64"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a" name="Edad"/><YAxis type="number" dataKey="fraude" stroke="#71717a" name="Fraude"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer></div>
               <table className="w-full text-left text-xs text-zinc-300 mt-8 border-t border-zinc-800 pt-4">
                 <thead><tr className="text-zinc-500 uppercase"><th className="pb-2">Operador</th><th className="pb-2">Edad</th><th className="pb-2 text-right">Fraude</th></tr></thead>
                 <tbody>{dbRecords.map(r => <tr key={r.id} className="border-b border-zinc-900"><td>{r.nombre}</td><td>{r.edad}</td><td className="text-right">{r.fraude}%</td></tr>)}</tbody>
