@@ -112,14 +112,19 @@ export default function App() {
     <div className="animate-fade-in max-w-2xl mx-auto mt-12 space-y-8">
       <div className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm text-center">
         <Activity className="mx-auto text-zinc-400 mb-6" size={48} />
-        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-zinc-100">El Síndrome de Falla Operativa</h2>
+        
+        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-zinc-100">
+          Diagnóstico de Simulación de Adultez
+        </h2>
+        
         <p className="text-zinc-400 text-sm md:text-base leading-relaxed mb-6">
-          La transición hacia la verdadera independencia logística es estadísticamente compleja. Nuestra base de datos histórica indica que perfiles de alta exigencia (desde Stage Managers hasta expertos en Global Operations y Data Analytics) 
-          suelen presentar vulnerabilidades críticas en la gestión básica de su propio ecosistema (hogar, salud, finanzas).
+          Estadísticamente, el 85% de nuestra generación está simplemente improvisando. Has dominado el arte de parecer que tienes todo bajo control en público, pero la telemetría no miente. Las mentes más dinámicas suelen presentar fallas críticas cuando se trata de gestionar la infraestructura básica de su propia existencia.
         </p>
+        
         <p className="text-zinc-500 text-xs uppercase tracking-widest mb-8 border-l-2 border-zinc-700 pl-4 text-left">
-          Adult.Log cruzará tus respuestas en tiempo real con una base de datos de 100 evaluaciones previas para diagnosticar tu viabilidad funcional.
+          Adult.Log cruzará tus respuestas con una base de datos global para calcular, en tiempo real, tu nivel exacto de fraude operativo.
         </p>
+        
         <button onClick={() => setView('FORM')} className="bg-zinc-100 text-black px-8 py-3 text-sm font-bold uppercase hover:bg-[#00FF41] transition-colors w-full md:w-auto">
           Inicializar Diagnóstico
         </button>
