@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
-import { supabase } from './supabase'; // Importamos la conexión a Supabase
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import { supabase } from './supabase'; 
 
 export default function App() {
   const [view, setView] = useState('LANDING'); 
   const [userData, setUserData] = useState({ nombre: '', cargo: '', edad: '' });
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [dbRecords, setDbRecords] = useState([]); // Inicia vacío, se llena desde la nube
+  const [dbRecords, setDbRecords] = useState([]); 
   
   const [categoryScores, setCategoryScores] = useState({
     Finanzas: 0,
@@ -51,7 +51,6 @@ export default function App() {
     }
   ];
 
-  // EFECTO: Cargar datos reales de Supabase al iniciar la app
   useEffect(() => {
     fetchRecords();
   }, []);
@@ -88,7 +87,6 @@ export default function App() {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      // Cálculo Final
       const totalScore = Object.values(newScores).reduce((a, b) => a + b, 0);
       const finalPct = Math.min(Math.round((totalScore / 500) * 100), 100);
       
@@ -96,7 +94,6 @@ export default function App() {
       if (finalPct <= 30) statusStr = 'OPERATIVO';
       else if (finalPct <= 60) statusStr = 'RIESGO MODERADO';
 
-      // Estructurar datos para Supabase
       const newRecord = {
         nombre: userData.nombre,
         edad: parseInt(userData.edad),
@@ -105,14 +102,12 @@ export default function App() {
         status: statusStr
       };
 
-      // GUARDAR EN LA NUBE
       const { data, error } = await supabase
         .from('telemetria')
         .insert([newRecord])
         .select();
 
       if (data) {
-        // Añadir a la tabla visual inmediatamente usando el ID real generado por Supabase
         setDbRecords(prev => [data[0], ...prev]);
       }
 
@@ -378,6 +373,33 @@ export default function App() {
             </table>
           </div>
         </div>
+
+        {/* NUEVO: Gráfica de Tendencia Global de la Base de Datos */}
+        {dbRecords.length > 0 && (
+          <div className="mt-8 border border-zinc-800 bg-zinc-950 p-4 md:p-6 rounded-sm">
+            <h3 className="text-sm text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2 border-b border-zinc-800 pb-4">
+              <Activity size={16} /> Tendencia de Fraude (Evolución de Registros)
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                {/* Invertimos el arreglo visualmente para que fluya de viejo a nuevo */}
+                <AreaChart data={[...dbRecords].reverse()} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorFraude" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00FF41" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#00FF41" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                  <XAxis dataKey="nombre" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
+                  <Tooltip cursor={{stroke: '#27272a', strokeWidth: 1}} contentStyle={{backgroundColor: '#09090b', border: '1px solid #27272a', color: '#00FF41'}} />
+                  <Area type="monotone" dataKey="fraude" stroke="#00FF41" fillOpacity={1} fill="url(#colorFraude)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -409,7 +431,7 @@ export default function App() {
         {view === 'RESULTS' && renderResults()}
         
         <footer className="mt-16 text-center text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-6 tracking-widest">
-          SYS::ADULT_VERIFICATION_DAEMON v4.0 | POSTGRESQL CONNECTED
+          SYS::ADULT_VERIFICATION_DAEMON v4.1 | POSTGRESQL CONNECTED
         </footer>
       </div>
     </div>
