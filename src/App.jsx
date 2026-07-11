@@ -51,11 +51,11 @@ export default function App() {
       <div className="max-w-5xl mx-auto">
         <header className="border-b border-zinc-800 pb-4 mb-8 flex justify-between items-center sticky top-0 bg-[#0a0a0a] z-50">
           <h1 className="text-3xl font-black text-zinc-100 animate-pulse">Adult<span className="text-[#00FF41]">.Log</span></h1>
-          <p className="text-[10px] text-zinc-500 uppercase">Sistema de Rescate Operativo</p>
+          <p className="text-[10px] text-zinc-500 uppercase">Estado: {view} // DB Synced</p>
         </header>
 
         {view === 'LANDING' && (
-          <div className="border border-zinc-800 p-8 text-center bg-zinc-950 mt-12">
+          <div className="border border-zinc-800 p-8 text-center bg-zinc-950 animate-fade-in mt-12">
             <h2 className="text-3xl font-bold mb-6 text-[#00FF41]">El Gran Fraude: ¿Por qué no tienes idea de lo que haces?</h2>
             <div className="text-zinc-400 mb-8 max-w-2xl mx-auto text-sm leading-relaxed space-y-4">
               <p>La adultez es un contrato que firmaste sin leer la letra pequeña. Te prometieron estabilidad, éxito y una vida en orden, pero la realidad es una lucha constante contra el sistema.</p>
@@ -75,7 +75,7 @@ export default function App() {
         )}
 
         {view === 'TEST' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 animate-fade-in">
             <div className="border border-zinc-800 p-6 bg-zinc-950">
               <div className="mb-6">
                 <div className="flex justify-between text-xs text-zinc-500 uppercase mb-1">
@@ -99,7 +99,7 @@ export default function App() {
         )}
 
         {view === 'RESULTS_BANNER' && (
-          <div className="text-center mt-12 p-8 border border-zinc-800 bg-zinc-950">
+          <div className="animate-fade-in text-center mt-12 p-8 border border-zinc-800 bg-zinc-950">
             <h2 className="text-4xl font-black mb-4">DIAGNÓSTICO: <span className={getRec().color}>{getRec().title}</span></h2>
             <p className="text-xl text-zinc-300 italic mb-8 max-w-2xl mx-auto">"{getRec().drama}"</p>
             <p className="text-6xl font-black mb-8">{livePercentage}% FRAUDE</p>
@@ -108,7 +108,7 @@ export default function App() {
         )}
 
         {view === 'SERVICES' && (
-          <div className="space-y-12 mt-8">
+          <div className="space-y-12 animate-fade-in mt-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { id: 'basic', title: 'Alquiler de Adulto', price: '$9.99/semana', desc: '¿Pánico por una llamada? Alquilamos un Adulto Responsable por 1 hora. Realiza trámites, firma documentos y finge seguridad absoluta. Garantía de no llorar en público.' },
@@ -123,7 +123,7 @@ export default function App() {
                   </div>
                   <div className="mt-auto">
                     <p className="text-2xl font-bold mb-4">{s.price}</p>
-                    <button className="w-full py-3 bg-zinc-800 border border-zinc-700 hover:bg-[#00FF41] hover:text-black uppercase font-bold text-sm">Comprar Salvamento</button>
+                    <a href="https://checkout.wompi.co/l/tdQ64T" target="_blank" rel="noopener noreferrer" className="w-full py-3 bg-zinc-800 border border-zinc-700 hover:bg-[#00FF41] hover:text-black uppercase font-bold text-sm text-center block">Comprar Salvamento</a>
                   </div>
                 </div>
               ))}
@@ -131,7 +131,7 @@ export default function App() {
             
             <div className="border border-zinc-800 p-6 bg-zinc-950">
               <h3 className="text-zinc-400 mb-6 text-sm uppercase tracking-widest">Correlación: Edad vs. Nivel de Fraude</h3>
-              <div className="h-64"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a" name="Edad"/><YAxis type="number" dataKey="fraude" stroke="#71717a" name="Fraude"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer></div>
+              <div className="h-64"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="#27272a"/><XAxis type="number" dataKey="edad" stroke="#71717a"/><YAxis type="number" dataKey="fraude" stroke="#71717a"/><Tooltip/><Scatter data={dbRecords} fill="#00FF41"/></ScatterChart></ResponsiveContainer></div>
               
               <h3 className="text-zinc-400 mb-6 text-sm uppercase tracking-widest mt-12">Base de datos de los últimos 20 encuestados</h3>
               <table className="w-full text-left text-xs text-zinc-300 border-t border-zinc-800 pt-4">
