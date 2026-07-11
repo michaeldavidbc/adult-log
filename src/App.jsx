@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Terminal, ShieldAlert, AlertTriangle, Lock } from 'lucide-react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function App() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -9,196 +9,236 @@ export default function App() {
   const questions = [
     {
       q: "INICIANDO PROTOCOLO: ¿Con qué frecuencia revisas tu estado de cuenta bancario?",
-      options: ["[A] Cada mes, sistemáticamente.", "[B] Cuando la tarjeta es rechazada.", "[C] El banco me llama a mí."]
+      options: ["[A] Cada mes, sistemáticamente.", "[B] Cuando la tarjeta es rechazada.", "[C] El banco me llama a mí."],
+      weights: [0, 7, 15]
     },
     {
       q: "¿Cuál es tu estrategia actual para lavar ropa blanca y de color?",
-      options: ["[A] Separo por color, temperatura y tela.", "[B] Todo a la lavadora en ciclo normal.", "[C] Comprar ropa nueva."]
+      options: ["[A] Separo por color, temperatura y tela.", "[B] Todo a la lavadora en ciclo normal.", "[C] Comprar ropa nueva."],
+      weights: [0, 5, 15]
     },
     {
       q: "EVALUACIÓN MÉDICA: ¿Cuándo fue tu último chequeo general preventivo?",
-      options: ["[A] Hace menos de un año.", "[B] Cuando el dolor no me dejaba dormir.", "[C] Mi sistema inmunológico es de hierro (creo)."]
+      options: ["[A] Hace menos de un año.", "[B] Cuando el dolor no me dejaba dormir.", "[C] Mi sistema inmunológico es de hierro (creo)."],
+      weights: [0, 8, 15]
     },
     {
       q: "¿Qué hay en tu refrigerador en este momento exacto?",
-      options: ["[A] Proteínas, vegetales y meal-prep.", "[B] Condimentos caducados y agua.", "[C] Una caja de pizza de hace 3 días."]
+      options: ["[A] Proteínas, vegetales y meal-prep.", "[B] Condimentos caducados y agua.", "[C] Una caja de pizza de hace 3 días."],
+      weights: [0, 6, 15]
     },
     {
       q: "SITUACIÓN DE CRISIS: Se rompe una tubería en tu baño. Tu reacción es:",
-      options: ["[A] Cierro la llave de paso principal.", "[B] Pongo una toalla y lloro.", "[C] Me mudo de apartamento."]
+      options: ["[A] Cierro la llave de paso principal.", "[B] Pongo una toalla y lloro.", "[C] Me mudo de apartamento."],
+      weights: [0, 10, 15]
     },
     {
       q: "¿Cómo gestionas tus contraseñas digitales?",
-      options: ["[A] Gestor de contraseñas encriptado.", "[B] MiNombre123! para todo.", "[C] Restablecer contraseña cada que inicio sesión."]
+      options: ["[A] Gestor de contraseñas encriptado.", "[B] MiNombre123! para todo.", "[C] Restablecer contraseña cada que inicio sesión."],
+      weights: [0, 5, 15]
     },
     {
-      q: "ÚLTIMA PRUEBA: ¿Tienes un fondo de emergencia para 3-6 meses?",
-      options: ["[A] Sí, en una cuenta de alto rendimiento.", "[B] Tengo ahorros para el fin de semana.", "[C] Mi fondo de emergencia es pedirle a mi mamá."]
+      q: "ÚLTIMA PRUEBA: ¿Tienes un fondo de emergencia para son de 3 a 6 meses?",
+      options: ["[A] Sí, en una cuenta de alto rendimiento.", "[B] Tengo ahorros para el fin de semana.", "[C] Mi fondo de emergencia es pedirle a mi mamá."],
+      weights: [0, 10, 15]
     }
   ];
 
-  const barData = [
-    { name: 'Finanzas', riesgo: 85 },
-    { name: 'Hogar', riesgo: 60 },
-    { name: 'Salud', riesgo: 90 },
-    { name: 'Tech', riesgo: 40 },
-  ];
+  // El puntaje máximo teórico es 105, lo normalizamos a base 100
+  const finalCalculatedScore = Math.min(Math.round((score / 105) * 100), 100);
 
-  const pieData = [
-    { name: 'Adultos Funcionales', value: 15 },
-    { name: 'Simuladores (Como tú)', value: 85 },
-  ];
-  const COLORS = ['#003300', '#00FF41'];
-
-  const handleAnswer = () => {
-    setScore((prev) => prev + (100 / questions.length));
+  const handleAnswer = (weight) => {
+    setScore((prev) => prev + weight);
     setCurrentQuestion((prev) => prev + 1);
   };
 
-  const renderQuiz = () => (
-    <div className="border border-[#00FF41] bg-black p-6 relative">
-      <div className="absolute top-0 left-0 bg-[#00FF41] text-black px-2 py-1 text-xs font-bold">
-        MÓDULO DE EVALUACIÓN - ADULT_CHECK.EXE
-      </div>
-      <div className="mt-6 mb-8 text-[#00FF41] text-lg lg:text-xl">
-        <span className="opacity-50">[{currentQuestion + 1}/{questions.length}] :: </span>
-        {questions[currentQuestion].q}
-      </div>
-      <div className="flex flex-col gap-4">
-        {questions[currentQuestion].options.map((opt, i) => (
-          <button 
-            key={i} 
-            onClick={handleAnswer}
-            className="text-left p-4 border border-[#00FF41] hover:bg-[#00FF41] hover:text-black transition-colors duration-200 font-mono text-sm md:text-base group"
-          >
-            <span className="opacity-50 group-hover:text-black">{`> `}</span>{opt}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+  const getRecommendation = () => {
+    if (finalCalculatedScore <= 30) return { plan: 'basic', title: 'RIESGO BAJO', color: 'text-green-400' };
+    if (finalCalculatedScore <= 70) return { plan: 'standard', title: 'RIESGO MODERADO', color: 'text-yellow-500' };
+    return { plan: 'vip', title: 'FALLO CRÍTICO', color: 'text-red-500' };
+  };
 
-  const renderResults = () => (
-    <div className="space-y-8 animate-fade-in">
-      <div className="border border-red-500 bg-[#1a0000] p-6 text-center">
-        <AlertTriangle className="mx-auto text-red-500 mb-2" size={48} />
-        <h2 className="text-2xl text-red-500 font-bold mb-2">¡ALERTA CRÍTICA: FALLO DE ADULTEZ!</h2>
-        <p className="text-red-400">Sus credenciales operativos han sido revocados. Requiere intervención inmediata.</p>
-      </div>
+  const recommendation = getRecommendation();
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Basic Plan */}
-        <div className="border border-gray-700 p-6 opacity-50 flex flex-col justify-between hover:border-gray-500 transition-colors">
-          <div>
-            <h3 className="text-xl mb-2 text-gray-400">Plan Supervivencia</h3>
-            <p className="text-2xl mb-4">$9.99<span className="text-sm">/mes</span></p>
-            <ul className="text-sm space-y-2 mb-6">
-              <li>{`>`} Recordatorios para tomar agua</li>
-              <li>{`>`} 1 receta de arroz que no se quema</li>
-            </ul>
-          </div>
-          <button className="w-full border border-gray-600 py-2">Seleccionar</button>
-        </div>
+  const barData = [
+    { name: 'Finanzas', riesgo: finalCalculatedScore > 60 ? 88 : 45 },
+    { name: 'Hogar', riesgo: finalCalculatedScore > 40 ? 75 : 30 },
+    { name: 'Salud', riesgo: finalCalculatedScore > 70 ? 92 : 50 },
+    { name: 'Logística', riesgo: finalCalculatedScore },
+  ];
 
-        {/* VIP Plan - Highlighted */}
-        <div className="border-2 border-[#00FF41] p-6 relative shadow-[0_0_15px_rgba(0,255,65,0.3)] flex flex-col justify-between transform md:-translate-y-2">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00FF41] text-black px-3 font-bold text-sm">
-            ACCIÓN REQUERIDA
-          </div>
-          <div>
-            <h3 className="text-xl mb-2 text-[#00FF41] font-bold">Plan "Padres Decepcionados"</h3>
-            <p className="text-3xl mb-4 text-[#00FF41]">$299.99<span className="text-sm">/mes</span></p>
-            <ul className="text-sm space-y-2 mb-6">
-              <li>{`>`} Asesor financiero 24/7</li>
-              <li>{`>`} Outsourcing de llamadas médicas</li>
-              <li>{`>`} Coartadas para el SAT/IRS</li>
-            </ul>
-          </div>
-          <button className="w-full bg-[#00FF41] text-black font-bold py-3 hover:bg-green-400">ACTIVAR PROTOCOLO VIP</button>
-        </div>
-
-        {/* Standard Plan */}
-        <div className="border border-gray-700 p-6 opacity-50 flex flex-col justify-between hover:border-gray-500 transition-colors">
-          <div>
-            <h3 className="text-xl mb-2 text-gray-400">Plan Independiente</h3>
-            <p className="text-2xl mb-4">$49.99<span className="text-sm">/mes</span></p>
-            <ul className="text-sm space-y-2 mb-6">
-              <li>{`>`} Tutoriales de planchado</li>
-              <li>{`>`} Alertas de vencimiento de leche</li>
-            </ul>
-          </div>
-          <button className="w-full border border-gray-600 py-2">Seleccionar</button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border border-gray-800 p-6">
-        <div>
-          <h4 className="text-sm mb-4 text-center text-gray-400">VECTORES DE RIESGO OPERATIVO</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barData}>
-                <XAxis dataKey="name" stroke="#00FF41" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{fill: '#002200'}} contentStyle={{backgroundColor: '#000', border: '1px solid #00FF41', color: '#00FF41'}} />
-                <Bar dataKey="riesgo" fill="#00FF41" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-sm mb-4 text-center text-gray-400">TELEMETRÍA GLOBAL DE USUARIOS</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{backgroundColor: '#000', border: '1px solid #00FF41', color: '#00FF41'}} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const pieData = [
+    { name: 'Tu Nivel de Fraude', value: finalCalculatedScore },
+    { name: 'Madurez Operativa', value: 100 - finalCalculatedScore },
+  ];
+  const COLORS = [finalCalculatedScore > 70 ? '#ef4444' : '#f59e0b', '#18181b'];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#00FF41] font-mono selection:bg-[#00FF41] selection:text-black">
+    <div className="min-h-screen bg-[#0a0a0a] text-zinc-100 font-mono selection:bg-[#00FF41] selection:text-black">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         
         {/* Header */}
-        <header className="border-b border-[#00FF41] pb-4 mb-8 flex items-end gap-3">
-          <Terminal size={40} className="mb-1" />
+        <header className="border-b border-zinc-800 pb-6 mb-8 flex items-end gap-3">
+          <Terminal size={36} className="text-[#00FF41] mb-1" />
           <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter">Adult.Log<span className="animate-pulse">_</span></h1>
-            <p className="text-xs md:text-sm opacity-80 uppercase tracking-widest mt-1">Evaluando si realmente tienes los credenciales necesarios para operar como adulto hoy.</p>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-zinc-100">
+              Adult<span className="text-[#00FF41]">.Log</span>
+            </h1>
+            <p className="text-xs text-zinc-400 uppercase tracking-wider mt-1">
+              Evaluando si realmente tienes los credenciales necesarios para operar como adulto hoy.
+            </p>
           </div>
         </header>
 
-        {/* Barra de progreso */}
-        <div className="mb-8">
+        {/* Telemetría de Barra de Fraude */}
+        <div className="mb-8 bg-zinc-950 p-4 border border-zinc-800">
           <div className="flex justify-between text-xs mb-2">
-            <span className="uppercase flex items-center gap-2"><ShieldAlert size={14}/> Nivel de Fraude Operativo Actual</span>
-            <span>{Math.min(Math.round(score), 100)}%</span>
+            <span className="uppercase flex items-center gap-2 text-zinc-400">
+              <ShieldAlert size={14} className={finalCalculatedScore > 70 ? "text-red-500 animate-pulse" : "text-[#00FF41]"} /> 
+              Índice de Fraude Operativo en Tiempo Real
+            </span>
+            <span className={finalCalculatedScore > 70 ? "text-red-500 font-bold" : "text-[#00FF41]"}>
+              {finalCalculatedScore}%
+            </span>
           </div>
-          <div className="w-full h-4 bg-[#0a0a0a] border border-[#00FF41] relative overflow-hidden">
+          <div className="w-full h-3 bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden">
             <div 
-              className="h-full bg-[#00FF41] transition-all duration-500 ease-out flex items-center justify-end px-1"
-              style={{ width: `${Math.min(score, 100)}%` }}
-            >
-              <div className="w-full h-[1px] bg-black opacity-20"></div>
-            </div>
+              className={`h-full transition-all duration-500 ease-out ${finalCalculatedScore > 70 ? 'bg-red-500' : finalCalculatedScore > 35 ? 'bg-yellow-500' : 'bg-[#00FF41]'}`}
+              style={{ width: `${Math.max(finalCalculatedScore, 2)}%` }}
+            />
           </div>
         </div>
 
-        {/* Main Content Area */}
+        {/* Contenedor Principal */}
         <main>
-          {currentQuestion < questions.length ? renderQuiz() : renderResults()}
+          {currentQuestion < questions.length ? (
+            /* Interfaz del Cuestionario */
+            <div className="border border-zinc-800 bg-zinc-950 p-6 rounded-sm relative">
+              <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest mb-4">
+                MÓDULO_AUDITORÍA :: PARTE {currentQuestion + 1} DE {questions.length}
+              </div>
+              <div className="mb-8 text-zinc-200 text-base md:text-lg border-l-2 border-[#00FF41] pl-3">
+                {questions[currentQuestion].q}
+              </div>
+              <div className="flex flex-col gap-3">
+                {questions[currentQuestion].options.map((opt, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => handleAnswer(questions[currentQuestion].weights[i])}
+                    className="text-left p-4 border border-zinc-800 bg-zinc-900/50 hover:border-[#00FF41] hover:bg-zinc-900 text-zinc-300 hover:text-white transition-all duration-150 text-sm md:text-base rounded-sm"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Interfaz de Resultados Dinámicos */
+            <div className="space-y-8 animate-fade-in">
+              <div className={`border p-6 text-center rounded-sm bg-zinc-950 ${finalCalculatedScore > 70 ? 'border-red-500/30' : 'border-zinc-800'}`}>
+                {finalCalculatedScore > 70 ? (
+                  <AlertTriangle className="mx-auto text-red-500 mb-2 animate-bounce" size={44} />
+                ) : (
+                  <CheckCircle2 className="mx-auto text-[#00FF41] mb-2" size={44} />
+                )}
+                <h2 className="text-xl font-bold mb-1 tracking-tight">DIAGNÓSTICO DEL SISTEMA: <span className={recommendation.color}>{recommendation.title}</span></h2>
+                <p className="text-sm text-zinc-400">Tu nivel de simulación ha sido calculado. Se requiere suscripción para mitigar riesgos.</p>
+              </div>
+
+              {/* Pricing Cards con Selección Lógica */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Plan Básico */}
+                <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${recommendation.plan === 'basic' ? 'border-[#00FF41] bg-zinc-900/30 ring-1 ring-[#00FF41]/30' : 'border-zinc-800 bg-zinc-950 opacity-40'}`}>
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-zinc-200">Plan Supervivencia</h3>
+                      {recommendation.plan === 'basic' && <span className="text-[10px] bg-[#00FF41] text-black px-2 py-0.5 font-bold uppercase rounded-sm">Sugerido</span>}
+                    </div>
+                    <p className="text-2xl font-black text-zinc-100 mb-4">$9.99<span className="text-xs text-zinc-500 font-normal">/mes</span></p>
+                    <ul className="text-xs text-zinc-400 space-y-2 mb-6">
+                      <li>• Alertas para tomar agua</li>
+                      <li>• Receta de arroz básico asistido</li>
+                    </ul>
+                  </div>
+                  <button className={`w-full py-2 text-xs font-bold rounded-sm border ${recommendation.plan === 'basic' ? 'bg-[#00FF41] text-black border-[#00FF41]' : 'border-zinc-700 text-zinc-400'}`}>
+                    ADQUIRIR ACCESO
+                  </button>
+                </div>
+
+                {/* Plan Estándar */}
+                <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${recommendation.plan === 'standard' ? 'border-yellow-500 bg-zinc-900/30 ring-1 ring-yellow-500/30' : 'border-zinc-800 bg-zinc-950 opacity-40'}`}>
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-zinc-200">Plan Independiente</h3>
+                      {recommendation.plan === 'standard' && <span className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 font-bold uppercase rounded-sm">Sugerido</span>}
+                    </div>
+                    <p className="text-2xl font-black text-zinc-100 mb-4">$49.99<span className="text-xs text-zinc-500 font-normal">/mes</span></p>
+                    <ul className="text-xs text-zinc-400 space-y-2 mb-6">
+                      <li>• Recordatorio de vencimiento de leche</li>
+                      <li>• Botón de pánico para citas médicas</li>
+                    </ul>
+                  </div>
+                  <button className={`w-full py-2 text-xs font-bold rounded-sm border ${recommendation.plan === 'standard' ? 'bg-yellow-500 text-black border-yellow-500' : 'border-zinc-700 text-zinc-400'}`}>
+                    ADQUIRIR ACCESO
+                  </button>
+                </div>
+
+                {/* Plan VIP */}
+                <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${recommendation.plan === 'vip' ? 'border-red-500 bg-zinc-900/30 ring-1 ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-zinc-800 bg-zinc-950 opacity-40'}`}>
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-zinc-200">Plan "Padres Decepcionados"</h3>
+                      {recommendation.plan === 'vip' && <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 font-bold uppercase rounded-sm">Requerido</span>}
+                    </div>
+                    <p className="text-2xl font-black text-zinc-100 mb-4">$299.99<span className="text-xs text-zinc-500 font-normal">/mes</span></p>
+                    <ul className="text-xs text-zinc-400 space-y-2 mb-6">
+                      <li>• Tercerización total de burocracia</li>
+                      <li>• Asistente personal para declarar impuestos</li>
+                      <li>• Generador de excusas familiares creíbles</li>
+                    </ul>
+                  </div>
+                  <button className={`w-full py-2 text-xs font-bold rounded-sm border ${recommendation.plan === 'vip' ? 'bg-red-500 text-white border-red-500' : 'border-zinc-700 text-zinc-400'}`}>
+                    CONTRATAR SALVAMENTO
+                  </button>
+                </div>
+              </div>
+
+              {/* Módulos Gráficos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <div className="border border-zinc-800 p-4 bg-zinc-950 rounded-sm">
+                  <h4 className="text-[11px] mb-4 text-zinc-400 tracking-wider text-center uppercase">Vectores de Vulnerabilidad</h4>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={barData}>
+                        <XAxis dataKey="name" stroke="#71717a" fontSize={11} tickLine={false} />
+                        <Tooltip cursor={{fill: '#18181b'}} contentStyle={{backgroundColor: '#09090b', border: '1px solid #27272a', color: '#f4f4f5'}} />
+                        <Bar dataKey="riesgo" fill={finalCalculatedScore > 70 ? '#ef4444' : '#f59e0b'} radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="border border-zinc-800 p-4 bg-zinc-950 rounded-sm">
+                  <h4 className="text-[11px] mb-4 text-zinc-400 tracking-wider text-center uppercase">Métrica de Simulación Global</h4>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={pieData} innerRadius={50} outerRadius={65} paddingAngle={4} dataKey="value">
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{backgroundColor: '#09090b', border: '1px solid #27272a', color: '#f4f4f5'}} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
         
-        <footer className="mt-12 text-center text-[10px] opacity-40 uppercase border-t border-gray-900 pt-4">
-          <p>SYS::ADULT_VERIFICATION_DAEMON v2.4.1 | CLASIFICACIÓN: CONFIDENCIAL</p>
+        <footer className="mt-12 text-center text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-4 tracking-widest">
+          SYS::ADULT_VERIFICATION_DAEMON v2.5.0 | CONTEXTO: PRODUCCIÓN SEGURA
         </footer>
       </div>
     </div>
