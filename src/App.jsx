@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Terminal, ShieldAlert, AlertTriangle, CheckCircle2, Database, Activity, User, Briefcase, Hash } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
+import { supabase } from './supabase'; // Importamos la conexión a Supabase
 
 export default function App() {
-  // --- ESTADO DE LA APLICACIÓN ---
   const [view, setView] = useState('LANDING'); 
-  
-  // --- DATOS DEL USUARIO (Ahora incluye Edad) ---
   const [userData, setUserData] = useState({ nombre: '', cargo: '', edad: '' });
-  
-  // --- LÓGICA DEL CUESTIONARIO ---
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [dbRecords, setDbRecords] = useState([]); // Inicia vacío, se llena desde la nube
   
   const [categoryScores, setCategoryScores] = useState({
     Finanzas: 0,
@@ -19,22 +16,7 @@ export default function App() {
     Logística: 0
   });
 
-  // --- BASE DE DATOS SIMULADA (Histórico) ---
-  // Inicializamos con algunos registros para que la tabla no esté vacía.
-  const [dbRecords, setDbRecords] = useState([
-    { id: 'SYS-892', nombre: 'Carlos M.', edad: 34, cargo: 'Backend Dev', fraude: 82, status: 'COLAPSO ESTRUCTURAL' },
-    { id: 'SYS-893', nombre: 'Laura G.', edad: 29, cargo: 'Project Manager', fraude: 45, status: 'RIESGO MODERADO' },
-    { id: 'SYS-894', nombre: 'Andrés F.', edad: 41, cargo: 'Director Médico', fraude: 90, status: 'COLAPSO ESTRUCTURAL' },
-    { id: 'SYS-895', nombre: 'Sofía T.', edad: 25, cargo: 'Marketing', fraude: 20, status: 'OPERATIVO' },
-    { id: 'SYS-896', nombre: 'Diego R.', edad: 31, cargo: 'Stage Manager', fraude: 68, status: 'COLAPSO ESTRUCTURAL' },
-  ]);
-
-  const GLOBAL_DB_AVERAGE = {
-    Finanzas: 55,
-    Hogar: 42,
-    Salud: 68,
-    Logística: 35
-  };
+  const GLOBAL_DB_AVERAGE = { Finanzas: 55, Hogar: 42, Salud: 68, Logística: 35 };
 
   const questions = [
     {
@@ -69,7 +51,25 @@ export default function App() {
     }
   ];
 
-  // --- FUNCIONES DE CONTROL ---
+  // EFECTO: Cargar datos reales de Supabase al iniciar la app
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    const { data, error } = await supabase
+      .from('telemetria')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (data) {
+      setDbRecords(data);
+    } else {
+      console.error("Error conectando a DB:", error);
+    }
+  };
+
   const handleInputChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
@@ -81,14 +81,14 @@ export default function App() {
     }
   };
 
-  const handleAnswer = (weight, category) => {
+  const handleAnswer = async (weight, category) => {
     const newScores = { ...categoryScores, [category]: Math.min(categoryScores[category] + weight, 100) };
     setCategoryScores(newScores);
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      // Calcular puntaje final para guardar en la Base de Datos
+      // Cálculo Final
       const totalScore = Object.values(newScores).reduce((a, b) => a + b, 0);
       const finalPct = Math.min(Math.round((totalScore / 500) * 100), 100);
       
@@ -96,31 +96,36 @@ export default function App() {
       if (finalPct <= 30) statusStr = 'OPERATIVO';
       else if (finalPct <= 60) statusStr = 'RIESGO MODERADO';
 
-      // Crear el nuevo registro
+      // Estructurar datos para Supabase
       const newRecord = {
-        id: `SYS-${Math.floor(1000 + Math.random() * 9000)}`,
         nombre: userData.nombre,
-        edad: userData.edad,
+        edad: parseInt(userData.edad),
         cargo: userData.cargo || 'No especificado',
         fraude: finalPct,
         status: statusStr
       };
 
-      // Guardar en la DB simulada (añadiéndolo al principio de la lista)
-      setDbRecords(prev => [newRecord, ...prev]);
-      
+      // GUARDAR EN LA NUBE
+      const { data, error } = await supabase
+        .from('telemetria')
+        .insert([newRecord])
+        .select();
+
+      if (data) {
+        // Añadir a la tabla visual inmediatamente usando el ID real generado por Supabase
+        setDbRecords(prev => [data[0], ...prev]);
+      }
+
       setView('RESULTS');
     }
   };
 
-  // Preparar datos para la gráfica en vivo
   const liveChartData = Object.keys(categoryScores).map(key => ({
     categoria: key,
     "Tu Nivel de Fraude": categoryScores[key],
     "Promedio Global (n=100)": GLOBAL_DB_AVERAGE[key]
   }));
 
-  // Puntuación global actual
   const totalScore = Object.values(categoryScores).reduce((a, b) => a + b, 0);
   const finalPercentage = Math.min(Math.round((totalScore / 500) * 100), 100);
 
@@ -129,8 +134,6 @@ export default function App() {
     if (finalPercentage <= 60) return { plan: 'standard', title: 'RIESGO MODERADO', color: 'text-yellow-500', border: 'border-yellow-500' };
     return { plan: 'vip', title: 'COLAPSO ESTRUCTURAL', color: 'text-red-500', border: 'border-red-500' };
   };
-
-  // --- RENDERIZADO DE VISTAS ---
 
   const renderLanding = () => (
     <div className="animate-fade-in max-w-2xl mx-auto mt-12 space-y-8">
@@ -213,7 +216,6 @@ export default function App() {
 
   const renderTest = () => (
     <div className="animate-fade-in grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-      {/* Columna Izquierda: Cuestionario */}
       <div className="border border-zinc-800 bg-zinc-950 p-6 rounded-sm flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
@@ -246,7 +248,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Columna Derecha: Gráfica en Vivo */}
       <div className="border border-zinc-800 bg-zinc-950 p-6 rounded-sm flex flex-col">
         <h4 className="text-xs text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2 border-b border-zinc-800 pb-4">
           <Database size={14} /> Telemetría en Tiempo Real vs Población
@@ -276,7 +277,6 @@ export default function App() {
     const rec = getRecommendation();
     return (
       <div className="space-y-8 animate-fade-in mt-8">
-        {/* Diagnóstico Final */}
         <div className={`border p-6 text-center rounded-sm bg-zinc-950 ${rec.border}`}>
           {finalPercentage > 60 ? (
             <AlertTriangle className="mx-auto text-red-500 mb-2 animate-bounce" size={44} />
@@ -292,7 +292,6 @@ export default function App() {
           <p className={`text-2xl font-black ${rec.color}`}>DIAGNÓSTICO: {rec.title} ({finalPercentage}% Fraude)</p>
         </div>
 
-        {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`border p-5 rounded-sm flex flex-col justify-between transition-all ${rec.plan === 'basic' ? 'border-[#00FF41] bg-zinc-900/30' : 'border-zinc-800 bg-zinc-950 opacity-50'}`}>
             <div>
@@ -341,16 +340,15 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tabla de Base de Datos */}
         <div className="mt-16 border border-zinc-800 bg-zinc-950 p-4 md:p-6 rounded-sm overflow-hidden">
           <h3 className="text-sm text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2 border-b border-zinc-800 pb-4">
-            <Database size={16} /> Registro de Telemetría (Últimos 50 Operadores)
+            <Database size={16} /> Registro de Telemetría Global (Base de Datos En Vivo)
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="text-zinc-500 border-b border-zinc-800">
                 <tr>
-                  <th className="pb-3 font-normal px-2">ID_SYS</th>
+                  <th className="pb-3 font-normal px-2">ID_SYS (DB)</th>
                   <th className="pb-3 font-normal px-2">OPERADOR</th>
                   <th className="pb-3 font-normal px-2">EDAD</th>
                   <th className="pb-3 font-normal px-2">CARGO</th>
@@ -359,9 +357,9 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="text-zinc-300">
-                {dbRecords.slice(0, 50).map((record, idx) => (
-                  <tr key={idx} className="border-b border-zinc-900 hover:bg-zinc-900/50 transition-colors">
-                    <td className="py-3 px-2 text-zinc-500 font-mono">{record.id}</td>
+                {dbRecords.map((record) => (
+                  <tr key={record.id} className="border-b border-zinc-900 hover:bg-zinc-900/50 transition-colors">
+                    <td className="py-3 px-2 text-zinc-500 font-mono">SYS-{record.id}</td>
                     <td className="py-3 px-2 uppercase">{record.nombre}</td>
                     <td className="py-3 px-2">{record.edad}</td>
                     <td className="py-3 px-2 uppercase text-zinc-400">{record.cargo}</td>
@@ -371,6 +369,11 @@ export default function App() {
                     </td>
                   </tr>
                 ))}
+                {dbRecords.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="py-8 text-center text-zinc-600 italic">Sincronizando con Base de Datos o sin registros previos...</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -383,7 +386,6 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-100 font-mono selection:bg-[#00FF41] selection:text-black">
       <div className="max-w-5xl mx-auto p-4 md:p-8">
         
-        {/* Cabecera Global */}
         <header className="border-b border-zinc-800 pb-4 mb-4 flex items-end justify-between">
           <div className="flex items-end gap-3">
             <Terminal size={32} className="text-[#00FF41] mb-1" />
@@ -395,19 +397,19 @@ export default function App() {
           </div>
           <div className="text-right hidden md:block">
             <p className="text-[10px] text-zinc-500 uppercase">Estado del Servidor: <span className="text-[#00FF41]">Online</span></p>
-            <p className="text-[10px] text-zinc-500 uppercase">Conexión DB: <span className="text-[#00FF41]">Estable (Syncing...)</span></p>
+            <p className="text-[10px] text-zinc-500 uppercase flex justify-end gap-1 items-center">
+              Conexión DB: <span className="text-[#00FF41] flex items-center gap-1"><Database size={10}/> Supabase Active</span>
+            </p>
           </div>
         </header>
 
-        {/* Renderizado Condicional */}
         {view === 'LANDING' && renderLanding()}
         {view === 'FORM' && renderForm()}
         {view === 'TEST' && renderTest()}
         {view === 'RESULTS' && renderResults()}
         
-        {/* Footer */}
         <footer className="mt-16 text-center text-[10px] text-zinc-600 uppercase border-t border-zinc-900 pt-6 tracking-widest">
-          SYS::ADULT_VERIFICATION_DAEMON v3.1 | MÓDULO DE RECOLECCIÓN DE DATOS ACTIVO
+          SYS::ADULT_VERIFICATION_DAEMON v4.0 | POSTGRESQL CONNECTED
         </footer>
       </div>
     </div>
